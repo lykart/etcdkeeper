@@ -149,7 +149,7 @@
 		var timeout = 5000 // milliseconds
 		var separator = '';
 		var serverBase = '/v3';
-		var etcdBase='127.0.0.1:32380';
+		var etcdBase;
 		console.log(etcdBase)
 		if(typeof(etcdBase) === 'undefined') {
 			etcdBase = '127.0.0.1:2379';
