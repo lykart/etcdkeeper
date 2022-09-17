@@ -27,4 +27,4 @@ ADD assets assets
 
 EXPOSE ${PORT}
 
-ENTRYPOINT echo "$ETCD_BASE" > assets/.env && ./etcdkeeper -h $HOST -p $PORT
+ENTRYPOINT sed -i "s/var etcdBase;/var etcdBase=$ETCD_BASE;/g" /opt/etcdkeeper/assets/etcdkeeper/index.html && ./etcdkeeper -h $HOST -p $PORT

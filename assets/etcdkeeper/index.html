@@ -149,12 +149,8 @@
 		var timeout = 5000 // milliseconds
 		var separator = '';
 		var serverBase = '/v3';
-		fetch('http://127.0.0.1:8080/.env')
-		.then(response => response.text())
-		.then((data) => {
-			console.log(data)
-		})
-		//var etcdBase = Cookies.get('etcd-endpoint');
+		var etcdBase='127.0.0.1:32380';
+		console.log(etcdBase)
 		if(typeof(etcdBase) === 'undefined') {
 			etcdBase = '127.0.0.1:2379';
 		}

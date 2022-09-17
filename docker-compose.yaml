@@ -14,10 +14,11 @@ services:
       - '32380:32380'
     command: [ '/usr/local/bin/etcd', '--name', 'etcd-0' ]
 
-  #etcd-keeper:
-  #  image: evildecay/etcdkeeper:latest
-  #  environment:
-  #    HOST: "0.0.0.0"
-  #  hostname: etcd-keeper.local
-  #  ports:
-  #    - '8080:8080'
+  etcd-keeper:
+    image: evildecay/etcdkeeper:latest
+    environment:
+      HOST: "0.0.0.0"
+      ETCD_BASE: "127.0.0.1:32380"
+    hostname: etcd-keeper.local
+    ports:
+      - '8080:8080'
