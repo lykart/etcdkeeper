@@ -1,0 +1,23 @@
+version: "2.4"
+
+services:
+  etcd-0:
+    image: quay.io/coreos/etcd:v3.5.2
+    environment:
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001,http://0.0.0.0:32380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd-0:2379,http://etcd-0:4001,http://127.0.0.1:32380
+      - ETCD_DATA_DIR=/var/lib/etcd\
+    hostname: etcd-0.local
+    volumes:
+      - ./.data/etcd-0:/var/lib/etcd
+    ports:
+      - '32380:32380'
+    command: [ '/usr/local/bin/etcd', '--name', 'etcd-0' ]
+
+  etcd-keeper:
+    image: evildecay/etcdkeeper:latest
+    environment:
+      HOST: "0.0.0.0"
+    hostname: etcd-keeper.local
+    ports:
+      - '8080:8080'
