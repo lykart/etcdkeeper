@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"crypto/sha256"
+    "crypto/subtle"
 )
 
 var (
@@ -47,9 +49,27 @@ type userInfo struct {
 	passwd string
 }
 
+type application struct {
+    auth struct {
+        username string
+        password string
+    }
+}
+
 func main() {
 	host := flag.String("h", "0.0.0.0", "host name or ip address")
 	port := flag.Int("p", 8080, "port")
+	app := new(application)
+	app.auth.username = os.Getenv("USERNAME")
+	app.auth.password = os.Getenv("PASSWORD")
+
+	if app.auth.username == "" {
+        log.Fatal("basic auth username must be provided")
+    }
+
+    if app.auth.password == "" {
+        log.Fatal("basic auth password must be provided")
+    }
 
 	flag.CommandLine.Parse(os.Args[1:])
 	separator = *sep
@@ -74,10 +94,10 @@ func main() {
 
 	// v3
 	http.HandleFunc("/v3/separator", middleware(nothing, getSeparator))
-	http.HandleFunc("/v3/connect", middleware(nothing, connect))
-	http.HandleFunc("/v3/put", middleware(nothing, put))
-	http.HandleFunc("/v3/get", middleware(nothing, get))
-	http.HandleFunc("/v3/delete", middleware(nothing, del))
+	http.HandleFunc("/v3/connect", middleware(nothing, app.basicAuth(app.connect)))
+	http.HandleFunc("/v3/put", middleware(nothing, app.basicAuth(app.put)))
+	http.HandleFunc("/v3/get", middleware(nothing, app.basicAuth(app.get)))
+	http.HandleFunc("/v3/delete", middleware(nothing, app.basicAuth(app.del)))
 	// dirctory mode
 	http.HandleFunc("/v3/getpath", middleware(nothing, getPath))
 
@@ -105,6 +125,29 @@ func main() {
 		log.Fatal("zalupa5",err)
 	}
 }
+
+func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}  
 
 func nothing(_ http.ResponseWriter, _ *http.Request) {
 	// Nothing
@@ -574,7 +617,7 @@ func getInfoV2(host string) map[string]string {
 }
 
 // v3 api
-func connect(w http.ResponseWriter, r *http.Request) {
+func (app *application) connect(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	defer mu.Unlock()
 	sess := sessmgr.SessionStart(w, r)
@@ -628,7 +671,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(b))
 }
 
-func put(w http.ResponseWriter, r *http.Request) {
+func (app *application) put(w http.ResponseWriter, r *http.Request) {
 	cli := getClient(w, r)
 	defer cli.Close()
 	key := r.FormValue("key")
@@ -682,7 +725,7 @@ func put(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func get(w http.ResponseWriter, r *http.Request) {
+func (app *application) get(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	key := r.FormValue("key")
 	log.Println("GET", "v3", key)
@@ -920,7 +963,7 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func del(w http.ResponseWriter, r *http.Request) {
+func (app *application) del(w http.ResponseWriter, r *http.Request) {
 	cli := getClient(w, r)
 	defer cli.Close()
 	key := r.FormValue("key")

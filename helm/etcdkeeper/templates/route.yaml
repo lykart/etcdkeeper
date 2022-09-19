@@ -1,0 +1,42 @@
+{{- if .Values.ingress.enabled -}}
+{{- $chart := include "..chart" . -}}
+{{- $name := include "..name" . -}}
+{{- $fullName := include "..fullname" . -}}
+{{- $ingressPath := .Values.ingress.path -}}
+
+{{- range $idx, $ingressHost := .Values.ingress.hosts }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ $fullName }}-{{ $idx }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    helm.sh/chart: {{ $chart }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+  {{- with $.Values.ingress.annotations }}
+  annotations:
+  {{ toYaml . | indent 4 }}
+  {{- end }}
+spec:
+  host: {{ $ingressHost }}
+  path: {{ $ingressPath }}
+  to:
+    kind: Service
+    name: {{ $fullName }}
+    weight: 100
+  {{- if $.Values.ingress.tls.enabled }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: {{ $.Values.ingress.tls.insecureEdgeTerminationPolicy }}
+    {{- if and $.Values.ingress.tls.caCertificate $.Values.ingress.tls.certificate $.Values.ingress.tls.key }}
+    caCertificate: {{ $.Values.ingress.tls.caCertificate | quote }}
+    certificate: {{ $.Values.ingress.tls.certificate | quote }}
+    caCertificate: {{ $.Values.ingress.tls.caCertificate | quote }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+status:
+  ingress: []
+

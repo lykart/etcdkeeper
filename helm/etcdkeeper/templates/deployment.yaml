@@ -1,0 +1,83 @@
+{{- $fullName := include "..fullname" . -}}
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ include "..fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "..name" . }}
+    helm.sh/chart: {{ include "..chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "..name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "..name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        ci/build-href: {{ .Values.buildHref | default "" | quote }}
+        ci/build-number: {{ .Values.buildId | default "0" | quote }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{ if or (gt (.Values.envSecretVars | len) 0) (gt (.Values.envVars | len) 0) (gt (.Values.existingEnvSecretVars | len) 0)}}          
+          env:
+{{ if .Values.envVars }}
+{{ range $key, $val := .Values.envVars }}
+            - name: {{ $key | upper }}
+              value: {{ $val | quote }}
+{{ end }}
+{{ end }}
+{{ if .Values.envSecretVars }}
+{{ range $key, $val := .Values.envSecretVars }}
+            - name: {{ $key | upper }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $fullName }}
+                  key: {{ $key | upper }}
+{{ end }}
+{{ end }}
+{{ if .Values.existingEnvSecretVars }}
+{{ range $key := .Values.existingEnvSecretVars }}
+            - name: {{ $key.envVariableName | upper }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $key.secretKeyRefName }}
+                  key: {{ $key.secretKeyRefKey }}
+{{ end }}
+{{ end }}
+{{ end }}
+          ports:
+            - name: {{ .Values.service.portName }}
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+    {{- with .Values.livenessProbe }}
+          livenessProbe:
+{{ toYaml . | indent 12 }}
+    {{- end }}
+    {{- with .Values.readinessProbe }}
+          readinessProbe:
+{{ toYaml . | indent 12 }}
+    {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+

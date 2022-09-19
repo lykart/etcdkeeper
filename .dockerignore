@@ -1,5 +1,6 @@
 screenshots/*
 Dockerfile
+.data
 .gitignore
 LICENSE
 README.md

@@ -16,7 +16,9 @@ FROM alpine:3.15
 
 ENV HOST="0.0.0.0"
 ENV PORT="8080"
-
+ENV USERNAME="admin"
+ENV PASSWORD="admin"
+ENV ETCD_BASE="etcd-0.local:2379"
 # RUN apk add --no-cache ca-certificates
 
 RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2

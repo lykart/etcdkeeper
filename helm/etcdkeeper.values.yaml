@@ -1,0 +1,110 @@
+replicaCount: 1
+
+image:
+  registry: hub.docker.com
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  repository: lykart/etcdkeeper
+  tag: "v1.1"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  # port - на какой порт будут приходить запросы к сервису
+  port: 8080
+  # portName - название порта в сервисе и деплойменте
+  portName: http
+  # targetPort - порт внутри пода, на который будет перенаправлены запросы с внешнего порта port
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - etcdkeeper.test.lan
+  tls:
+    enabled: false
+    insecureEdgeTerminationPolicy: Redirect
+    caCertificate: ""
+    certificate: ""
+    key: ""
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: []
+
+# переменные окружения из этой map-ы будут переданы контейнеру
+# имя_переменной: значение
+envVars:
+#  SOME_COOL_VAR: 'Some important value'
+#  SOME_ANOTHER_COOL_VAR: 'Some important value #2'
+#  # ... and so on and so fourth
+  HOST: "0.0.0.0"
+  ETCD_BASE: "etcd-0.svc.cluster.local:2379"
+  PORT: 8080
+
+# existingEnvSecretVars - список уже существующих секретов, которые необходимо примонтировать к поду
+# Например, чтобы примонировать в переменную MONGODB_PASSWORD enviroment пароль от официальной mongodb
+# Для этого списка НЕ создаются новые объекты Secret. Для создания Secret используй envSecretVars 
+existingEnvSecretVars: {}
+#  - secretKeyRefName: mongodb
+#    secretKeyRefKey: mongodb-root-password
+#    envVariableName: MONGODB_PASSWORD
+
+# переменные окружения из этой map-ы будут переданы контейнеру через Kubernetes Secret-объект
+# имя_переменной: значение
+envSecretVars:
+  USER: "admin"
+  PASSWORD: "admin"
+#  SOME_COOL_SECRET_VAR: 'verySecret key string'
+#  SOME_ANOTHER_COOL_SECRET_VAR: 'some other verySecret key string'
+#  # ... and so on and so fourth
