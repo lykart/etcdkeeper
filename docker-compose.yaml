@@ -16,10 +16,12 @@ services:
     command: [ '/usr/local/bin/etcd', '--name', 'etcd-0' ]
 
   etcd-keeper:
-    image: lykart/etcdkeeper:latest
+    image: lykart/etcdkeeper:v1.1
     environment:
       HOST: "0.0.0.0"
       ETCD_BASE: "etcd-0.local:32380"
+      USERNAME: "admin"
+      PASSWORD: "admin"
     hostname: etcd-keeper.local
     ports:
       - '8080:8080'
